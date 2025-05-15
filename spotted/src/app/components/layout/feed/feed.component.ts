@@ -40,6 +40,7 @@ export class FeedComponent {
 
   findAllValidos(page: number = 0, append: boolean = false) {
     const idUser = this.loginService.getIdUsuarioLogado();
+    console.log('findAllValidos: idUser:', idUser, 'Page:', page);
     if (idUser) {
       this.isLoading = true;
       this.postService.findAllValidos(idUser, page, this.pageSize).subscribe({

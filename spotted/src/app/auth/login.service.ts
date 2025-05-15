@@ -6,6 +6,13 @@ import { Login } from './login';
 import { Usuario } from './usuario';
 import { environment } from '../../environments/environment';
 
+interface KeycloakJwtPayload extends JwtPayload {
+  sub?: string; // ID do usuário (keycloakId)
+  realm_access?: { roles: string[] }; // Papéis do usuário
+  email?: string;
+  preferred_username?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -35,16 +42,29 @@ export class LoginService {
 
   jwtDecode(): Usuario | null {
     const token = this.getToken();
-    if (token) {
-      const payload = jwtDecode<JwtPayload & { id?: string; role?: string }>(
-        token
-      );
-      return {
-        id: payload.id || '',
-        role: payload.role || '',
-      } as Usuario;
+    if (!token) {
+      return null;
     }
-    return null;
+
+    try {
+      const payload = jwtDecode<KeycloakJwtPayload>(token);
+      
+      // Extrair o papel principal (ignorar papéis padrão do Keycloak)
+      const roles = payload.realm_access?.roles || [];
+      const primaryRole = roles.find(role => 
+        !['offline_access', 'uma_authorization', 'default-roles-spotted'].includes(role)
+      ) || '';
+
+      return {
+        id: payload.sub || '',
+        role: primaryRole,
+        email: payload.email || '',
+        username: payload.preferred_username || '',
+      } as Usuario;
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return null;
+    }
   }
 
   hasPermission(role: string): boolean {
