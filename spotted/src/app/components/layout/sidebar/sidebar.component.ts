@@ -70,11 +70,6 @@ export class SidebarComponent {
 
   modalRef: MdbModalRef<ModalUserComponent> | null = null;
   openModal() {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const payload = jwtDecode<JwtPayload & { id?: string; role?: string }>(token);
-      console.log('User role:', payload.role);
-    }
     this.modalRef = this.modalService.open(ModalUserComponent, {
       modalClass: 'modal-dialog-centered',
     });
