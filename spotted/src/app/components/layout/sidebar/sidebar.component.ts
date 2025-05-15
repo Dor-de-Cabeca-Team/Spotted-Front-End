@@ -5,6 +5,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MdbModalRef, MdbModalService } from 'mdb-angular-ui-kit/modal';
 import { ModalUserComponent } from '../modal-user/modal-user.component';
 import { MdbDropdownModule } from 'mdb-angular-ui-kit/dropdown';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
 
 interface User {
   username: string;
@@ -46,6 +47,7 @@ export class SidebarComponent {
 
   status: boolean = false;
 
+
   constructor(
     private router: Router,
     private sanitizer: DomSanitizer,
@@ -67,11 +69,18 @@ export class SidebarComponent {
   };
 
   modalRef: MdbModalRef<ModalUserComponent> | null = null;
-
   openModal() {
     this.modalRef = this.modalService.open(ModalUserComponent, {
       modalClass: 'modal-dialog-centered',
     });
+  }
+  getRole(): string | undefined {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const payload = jwtDecode<JwtPayload & { id?: string; role?: string }>(token);
+      return payload.role;
+    }
+    return undefined;
   }
 
   sair() {
