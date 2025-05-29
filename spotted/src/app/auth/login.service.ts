@@ -49,15 +49,23 @@ export class LoginService {
     try {
       const payload = jwtDecode<KeycloakJwtPayload>(token);
       
-      // Extrair o papel principal (ignorar papéis padrão do Keycloak)
-      const roles = payload.realm_access?.roles || [];
-      const primaryRole = roles.find(role => 
-        !['offline_access', 'uma_authorization', 'default-roles-spotted'].includes(role)
-      ) || '';
+      const rolesToIgnore = [
+      'offline_access',
+      'uma_authorization',
+      'default-roles-spotted',
+      'COORD',
+      'RECEPCAO'
+    ];
+    const validRoles = ['USUARIO', 'ADMIN'];
 
-      return {
+    const roles = payload.realm_access?.roles || [];
+    const filteredRoles = roles.filter(role => 
+      validRoles.includes(role) && !rolesToIgnore.includes(role)
+    );
+
+    return {
         id: payload.sub || '',
-        role: primaryRole,
+        roles: filteredRoles,
         email: payload.email || '',
         username: payload.preferred_username || '',
       } as Usuario;
@@ -68,9 +76,10 @@ export class LoginService {
   }
 
   hasPermission(role: string): boolean {
-    const user = this.jwtDecode();
-    return user?.role === role;
-  }
+  const user = this.jwtDecode();
+  const validRoles = ['USUARIO', 'ADMIN'];
+  return !!user?.roles && user.roles.includes(role) && validRoles.includes(role);
+}
 
   getUsuarioLogado(role: string) {
     let user = this.jwtDecode() as Usuario;

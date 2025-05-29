@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MdbModalRef, MdbModalService } from 'mdb-angular-ui-kit/modal';
 import { ModalUserComponent } from '../modal-user/modal-user.component';
 import { MdbDropdownModule } from 'mdb-angular-ui-kit/dropdown';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { LoginService } from '../../../auth/login.service';
 
 // Interface para o payload do token do Keycloak
 interface KeycloakJwtPayload extends JwtPayload {
@@ -26,6 +27,10 @@ interface User {
   styleUrls: ['./sidebar.component.scss'],
 })
 export class SidebarComponent {
+  private loginService = inject(LoginService);
+  private router = inject(Router);
+  private sanitizer = inject(DomSanitizer);
+  private modalService = inject(MdbModalService);
   menuItems = [
     {
       route: '/principal',
@@ -39,12 +44,6 @@ export class SidebarComponent {
   ];
 
   status: boolean = false;
-
-  constructor(
-    private router: Router,
-    private sanitizer: DomSanitizer,
-    private modalService: MdbModalService
-  ) {}
 
   clickEvent() {
     this.status = !this.status;
@@ -67,30 +66,13 @@ export class SidebarComponent {
     });
   }
 
-  getRole(): string | undefined {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return undefined;
-    }
-
-    try {
-      const payload = jwtDecode<KeycloakJwtPayload>(token);
-      
-      // Extrair o papel principal (ignorar papéis padrão do Keycloak)
-      const roles = payload.realm_access?.roles || [];
-      const primaryRole = roles.find(role => 
-        !['offline_access', 'uma_authorization', 'default-roles-spotted'].includes(role)
-      );
-      
-      return primaryRole || undefined;
-    } catch (error) {
-      console.error('Erro ao decodificar o token:', error);
-      return undefined;
-    }
+  getRole(): boolean {
+    const user = this.loginService.jwtDecode();
+    return !!user?.roles && user.roles.includes('ADMIN');
   }
 
   sair() {
-    localStorage.removeItem('token');
+    this.loginService.removerToken();
     localStorage.removeItem('loggedUser');
     this.router.navigate(['/login']);
   }

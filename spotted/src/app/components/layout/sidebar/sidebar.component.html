@@ -28,7 +28,7 @@
         <li><a class="dropdown-item" (click)="sair()">Sair</a></li>
       </ul>
     </div>
-     @if (getRole() == 'ADMIN') {
+     @if (getRole()) {
       <div class="list-group-item">
         <a class="d-flex align-items-center">
           <i class="fas fa-user-circle icon fa-2x"></i>

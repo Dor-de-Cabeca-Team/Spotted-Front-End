@@ -7,14 +7,17 @@ export const loginGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   const token = loginService.getToken();
-  if (token && loginService.jwtDecode()) {
+  const user = loginService.jwtDecode();
+
+  if (token && user && user.roles && user.roles.length > 0) {
     if (
-      loginService.hasPermission('USUARIO') ||
-      (loginService.hasPermission('ADMIN') && state.url === '/principal')
+      user.roles.includes('USUARIO') ||
+      (user.roles.includes('ADMIN') && state.url === '/principal')
     ) {
       return true;
     }
   }
+
   router.navigate(['/login']);
   return false;
 };
