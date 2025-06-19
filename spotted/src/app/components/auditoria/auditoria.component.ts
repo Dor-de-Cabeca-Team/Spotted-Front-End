@@ -18,6 +18,7 @@ import { AuditoriaService } from '../../services/auditoria/auditoria.service';
 import { Auditoria, AcaoTipo } from '../../models/auditoria/auditoria.model';
 import { finalize } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
+import {SidebarComponent} from "../layout/sidebar/sidebar.component";
 
 @Component({
   selector: 'app-auditoria',
@@ -39,7 +40,8 @@ import * as XLSX from 'xlsx';
     ReactiveFormsModule,
     MatCardModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    SidebarComponent,
   ]
 })
 export class AuditoriaComponent implements OnInit {
