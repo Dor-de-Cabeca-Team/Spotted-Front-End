@@ -10,10 +10,15 @@ export const loginGuard: CanActivateFn = (route, state) => {
   const user = loginService.jwtDecode();
 
   if (token && user && user.roles && user.roles.length > 0) {
-    if (
-      user.roles.includes('USUARIO') ||
-      (user.roles.includes('ADMIN') && state.url === '/principal')
-    ) {
+    if (state.url === '/auditoria') {
+      if (user.roles.includes('ADMIN')) {
+        return true;
+      }
+      router.navigate(['/principal']);
+      return false;
+    }
+    if (user.roles.includes('USUARIO') ||
+      (user.roles.includes('ADMIN') && state.url === '/principal')) {
       return true;
     }
   }

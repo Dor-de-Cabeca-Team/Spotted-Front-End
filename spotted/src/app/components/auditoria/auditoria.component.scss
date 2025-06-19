@@ -1,0 +1,89 @@
+.audit-container {
+  margin: 20px;
+
+  .filters-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+
+    mat-form-field {
+      flex: 1;
+      min-width: 200px;
+    }
+  }
+
+  .button-container {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+  }
+
+  .table-container {
+    margin-top: 20px;
+    overflow-x: auto;
+
+    table {
+      width: 100%;
+    }
+
+    .action-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+
+      &.post {
+        background-color: #e3f2fd;
+        color: #1565c0;
+      }
+      &.comentário {
+        background-color: #f3e5f5;
+        color: #7b1fa2;
+      }
+      &.like {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+      &.denúncia {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+      &.login {
+        background-color: #e8eaf6;
+        color: #3949ab;
+      }
+      &.registro {
+        background-color: #fff3e0;
+        color: #ef6c00;
+      }
+    }
+
+    td.mat-cell, th.mat-header-cell {
+      padding: 12px;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .audit-container {
+    margin: 10px;
+
+    .filters-container {
+      mat-form-field {
+        min-width: 100%;
+      }
+    }
+  }
+}

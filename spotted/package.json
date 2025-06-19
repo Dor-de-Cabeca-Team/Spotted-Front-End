@@ -28,6 +28,7 @@
     "rxjs": "~7.8.0",
     "spotted": "file:",
     "tslib": "^2.3.0",
+    "xlsx": "^0.18.5",
     "zone.js": "~0.14.3"
   },
   "devDependencies": {
