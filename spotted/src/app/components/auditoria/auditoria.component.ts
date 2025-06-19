@@ -14,11 +14,12 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AuditoriaService } from '../../services/auditoria/auditoria.service';
-import { Auditoria, AcaoTipo } from '../../models/auditoria/auditoria.model';
+import { Auditoria, AcaoTipo, BaseAuditoriaContent } from '../../models/auditoria/auditoria.model';
 import { finalize } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
-import {SidebarComponent} from "../layout/sidebar/sidebar.component";
+import { SidebarComponent } from "../layout/sidebar/sidebar.component";
 
 @Component({
   selector: 'app-auditoria',
@@ -41,6 +42,7 @@ import {SidebarComponent} from "../layout/sidebar/sidebar.component";
     MatCardModule,
     MatIconModule,
     MatSnackBarModule,
+    MatTooltipModule,
     SidebarComponent,
   ]
 })
@@ -74,6 +76,88 @@ export class AuditoriaComponent implements OnInit {
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+  }
+
+  private parseConteudo(conteudo: string): BaseAuditoriaContent {
+    const lines = conteudo.split('\n');
+    const result: any = {
+      tipo: lines[0]
+    };
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('Post ID:')) {
+        result.postId = line.replace('Post ID:', '').trim();
+      } else if (line.startsWith('Comentário ID:')) {
+        result.comentarioId = line.replace('Comentário ID:', '').trim();
+      } else if (line.startsWith('Usuario ID:')) {
+        result.usuarioId = line.replace('Usuario ID:', '').trim();
+      } else if (line.startsWith('Conteúdo:')) {
+        result.conteudo = line.replace('Conteúdo:', '').trim().replace(/^"|"$/g, '');
+      }
+    }
+
+    return result;
+  }
+
+  formatConteudo(conteudo: string): string {
+    try {
+      const parsed = this.parseConteudo(conteudo);
+      switch (parsed.tipo) {
+        case 'Post criado':
+          return `${parsed.conteudo}`;
+        case 'Comentário criado':
+          return `${parsed.conteudo}`;
+        case 'Like criado':
+          return parsed.comentarioId ?
+            'Like em comentário' :
+            'Like em post';
+        case 'Like deletado':
+          return parsed.comentarioId ?
+            'Like removido do comentário' :
+            'Like removido do post';
+        case 'Denúncia criada':
+          return parsed.comentarioId ?
+            'Denúncia em comentário' :
+            'Denúncia em post';
+        case 'Denúncia deletada':
+          return parsed.comentarioId ?
+            'Denúncia removida do comentário' :
+            'Denúncia removida do post';
+        case 'Usuário criado':
+          return 'Novo usuário registrado';
+        case 'Usuário logado':
+          return 'Login realizado';
+        default:
+          return conteudo;
+      }
+    } catch {
+      return conteudo;
+    }
+  }
+
+  getTooltipContent(conteudo: string): string {
+    try {
+      const parsed = this.parseConteudo(conteudo);
+      let tooltip = `${parsed.tipo}\n`;
+
+      if (parsed.postId) {
+        tooltip += `Post ID: ${parsed.postId}\n`;
+      }
+      if (parsed.comentarioId) {
+        tooltip += `Comentário ID: ${parsed.comentarioId}\n`;
+      }
+      if (parsed.usuarioId) {
+        tooltip += `Usuário ID: ${parsed.usuarioId}\n`;
+      }
+      if (parsed.conteudo) {
+        tooltip += `Conteúdo: "${parsed.conteudo}"`;
+      }
+
+      return tooltip;
+    } catch {
+      return conteudo;
+    }
   }
 
   private loadAuditData(): void {
@@ -157,35 +241,39 @@ export class AuditoriaComponent implements OnInit {
   exportToExcel(): void {
     this.isExporting = true;
     try {
-      // Define los headers
-      const headers = ['Email', 'Data', 'Ação', 'Conteúdo'];
+      const headers = ['Email', 'Data', 'Ação', 'Tipo', 'Conteúdo', 'Post ID', 'Comentário ID', 'Usuário ID'];
 
-      // Prepara los datos
-      const data = this.dataSource.filteredData.map(item => [
-        item.email,
-        new Date(item.data).toLocaleString(),
-        item.acao,
-        item.conteudo
-      ]);
+      const data = this.dataSource.filteredData.map(item => {
+        const parsed = this.parseConteudo(item.conteudo);
+        return [
+          item.email,
+          new Date(item.data).toLocaleString(),
+          item.acao,
+          parsed.tipo,
+          parsed.conteudo || '',
+          parsed.postId || '',
+          parsed.comentarioId || '',
+          parsed.usuarioId || ''
+        ];
+      });
 
-      // Combina headers con datos
       const excelData = [headers, ...data];
-
-      // Crea la hoja de cálculo
       const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(excelData);
       const wb: XLSX.WorkBook = XLSX.utils.book_new();
 
-      // Configura el ancho de las columnas
       const wsColumns = [
         { wch: 30 }, // Email
         { wch: 20 }, // Data
         { wch: 15 }, // Ação
-        { wch: 50 }  // Conteúdo
+        { wch: 20 }, // Tipo
+        { wch: 50 }, // Conteúdo
+        { wch: 40 }, // Post ID
+        { wch: 40 }, // Comentário ID
+        { wch: 40 }  // Usuário ID
       ];
       ws['!cols'] = wsColumns;
 
-      // Aplica estilos a los headers (negrita)
-      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:D1');
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:H1');
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
         if (!ws[cellRef]) continue;
@@ -193,7 +281,6 @@ export class AuditoriaComponent implements OnInit {
       }
 
       XLSX.utils.book_append_sheet(wb, ws, 'Auditoria');
-
       const fileName = `auditoria_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
 
@@ -205,9 +292,7 @@ export class AuditoriaComponent implements OnInit {
     } catch (error) {
       console.error('Erro ao exportar:', error);
       this.snackBar.open('Erro ao exportar arquivo', 'Fechar', {
-        duration: 3000,
-        horizontalPosition: 'end',
-        verticalPosition: 'top'
+        duration: 3000
       });
     } finally {
       this.isExporting = false;
@@ -231,7 +316,7 @@ export class AuditoriaComponent implements OnInit {
         case 'acao':
           return compare(a.acao, b.acao, isAsc);
         case 'conteudo':
-          return compare(a.conteudo || '', b.conteudo || '', isAsc);
+          return compare(this.formatConteudo(a.conteudo), this.formatConteudo(b.conteudo), isAsc);
         default:
           return 0;
       }
